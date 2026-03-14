@@ -1,24 +1,18 @@
-type Post = {
-	id: number
-	title: string
-}
+import { Suspense } from 'react'
+import SlowComponent from './SlowComponent'
+
+// ページの一部をローディング状態にするにはSuspence
+// ページ全体をローディング状態にするにはSuspenceを使用せず、loading.tsxを使用する
 
 export default async function Home() {
-	// fetchには独自の強力な機能がある、キャッシュの機能
-	// 通常は外部のAPIにデータを取得しにいくのをページを表示するために毎回実行してしまうと通信が発生し時間がかかる
-	// Next.jsのfetch関数は、サーバー側にこっそり保存しておき、次に同じデータが必要になったときは
-	// 外部APIではなくNextのサーバー常に保存しておいたデータを返してくれる→これにより無駄な通信を防ぎ高速な表示が可能となる
-	// キャッシュではなく新しいデータを1から取得する細かいキャッシュの制御方法については、後続のレクチャーで解説
-	const res = await fetch('https://jsonplaceholder.typicode.com/posts')
-	const posts: Post[] = await res.json()
 	return (
 		<div>
-			<h1>記事一覧</h1>
-			<ul>
-				{posts.map((post) => (
-					<li key={post.id}>{post.title}</li>
-				))}
-			</ul>
+			<h1>メインコンテンツ(すぐに表示)</h1>
+			{/* Suspenceを使うことで、中身のみローディング状態にすることができる*/}
+			{/* fallbackはSuspenceが読み込まれるまでに代わりに表示しておくUIを設定できる */}
+			{/* <Suspense fallback={<div>重いコンポーネントを読み込み中</div>}> */}
+			<SlowComponent />
+			{/* </Suspense> */}
 		</div>
 	)
 }
