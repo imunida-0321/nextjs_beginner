@@ -1,13 +1,13 @@
 export default async function InterceptedPhotoPage({
-    params,
+	params,
 }: {
-    params: Promise<{id: string}>
+	params: Promise<{ id: string }>
 }) {
-    const {id} = await params
-    return(
-        <div>
-            <h1>Intercepted Photo Page ID: {id}</h1>
-            <p>これはインターセプトされた画面です</p>
-        </div>
-    )
+	const { id } = await params
+	return (
+		<div>
+			<h1>Intercepted Photo Page ID: {id}</h1>
+			<p>これはインターセプトされた画面です</p>
+		</div>
+	)
 }
