@@ -29,9 +29,6 @@ export default function RootLayout({
           <h1>共通ヘッダー</h1>
         </header>
         {children}
-        <footer>
-          <h1>共通フッター</h1>
-        </footer>
       </body>
     </html>
   );
