@@ -1,18 +1,34 @@
-import { Suspense } from 'react'
-import SlowComponent from './SlowComponent'
+// 今回はフォームが送信された時にapi/createのエンドポイントを叩く
+// ブラウザ側のイベントフォームのonSubmitを扱う必要があるため、use clientを使用しClientコンポーネントにする
+'use client'
+type FormSubmitEv = { preventDefault(): void; currentTarget: HTMLFormElement }
 
-// ページの一部をローディング状態にするにはSuspence
-// ページ全体をローディング状態にするにはSuspenceを使用せず、loading.tsxを使用する
+// clientコンポーネントなのでasyncは使えないよ
+export default function Home() {
+	const handleSubmit = async (e: FormSubmitEv) => {
+		// フォーム自体のsubmit処理のキャンセル
+		e.preventDefault()
+		// その上でe.currentTargetを渡してあげて
+		const form = new FormData(e.currentTarget)
+		// formの中のnameという名前のinputに入っている値を取り出す
+		const name = form.get('name')
 
-export default async function Home() {
+		await fetch('/api/create', {
+			// createでPOSTを指定しているのでPOSTを定義
+			method: 'POST',
+			// JSONで送りたいのでjson指定
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			// 実際にエンドポイントに渡すデータを定義
+			// 以下の書き方はnameをjson形式に変換した上でapi/createのエンドポイントに送っている
+			body: JSON.stringify({ name }),
+		})
+	}
 	return (
-		<div>
-			<h1>メインコンテンツ(すぐに表示)</h1>
-			{/* Suspenceを使うことで、中身のみローディング状態にすることができる*/}
-			{/* fallbackはSuspenceが読み込まれるまでに代わりに表示しておくUIを設定できる */}
-			{/* <Suspense fallback={<div>重いコンポーネントを読み込み中</div>}> */}
-			<SlowComponent />
-			{/* </Suspense> */}
-		</div>
+		<form onSubmit={handleSubmit}>
+			<input type="text" name="name" />
+			<button type="submit">送信</button>
+		</form>
 	)
 }
