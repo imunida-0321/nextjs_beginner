@@ -1,5 +1,4 @@
 // serverActionでAPI Routesより少ないコードで同じ機能を実現できる
-// API Routeと ServerActionの使い分けについて
 
 export default function Home() {
 	const createAction = async (formData: FormData) => {
