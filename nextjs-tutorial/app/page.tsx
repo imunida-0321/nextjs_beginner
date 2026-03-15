@@ -1,24 +1,24 @@
-// serverActionでAPI Routesより少ないコードで同じ機能を実現できる
+// use Cache使用前
+// 実際に重いデータを取得してるわけではないがsetTimeoutで擬似的に再現
+// async function getHeavyData() {
+// 	await new Promise((resolve) => setTimeout(resolve, 3000))
+// 	return '重いデータの取得完了'
+// }
 
-export default function Home() {
-	const createAction = async (formData: FormData) => {
-		// use serverはuse clientみたいなものでcreateActionという関数がサーバーアクションになるということを
-		// Next側に伝えるための重要な記述
-		'use server'
-		const name = formData.get('name')
-		console.log('ServerActionで実行されました', name)
-	}
-	// データキャッシュはfetch関数にオプションを渡すことで利用することができる。
-	// 以下force-cacheをすることにより外部から取得したデータがキャッシュされ無駄な通信を減らすことができる
-	fetch('hoge.com', { cache: 'force-cache' })
-	// 無効化したい場合はno-storeを指定（デフォルトはno-storeなのでオプション指定なしだとキャッシュ機能無効化になる）
-	// ただNext14まではデフォルトが逆でforce-cacheがデフォルト(キャッシュ機能有効化)になっている
-	fetch('hoge.com', { cache: 'no-store' })
-	fetch('hoge.com')
-	return (
-		<form action={createAction}>
-			<input type="text" name="name" />
-			<button type="submit">送信</button>
-		</form>
-	)
+// export default async function Home() {
+// 	const data = await getHeavyData()
+// 	return <h1>{data}</h1>
+// }
+
+// use Cache使用
+async function getHeavyData() {
+	// これでgetHeavyDataのキャッシュが保存される
+	'use cache'
+	await new Promise((resolve) => setTimeout(resolve, 3000))
+	return '重いデータの取得完了'
+}
+
+export default async function Home() {
+	const data = await getHeavyData()
+	return <h1>{data}</h1>
 }
