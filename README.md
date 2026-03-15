@@ -46,3 +46,13 @@ Next.jsの４つのキャッシュ機能が以下になる<br>
    - リクエストを跨いで永続的に保存
    - ユーザーAの結果をBさんにも共有
    - コードを書く際に明示的な設定が必要（Next.js 15~）
+
+- Data Cacheはfetch関数にオプションを渡すことで利用することができる。
+- 以下force-cacheをすることにより外部から取得したデータがキャッシュされ無駄な通信を減らすことができる<br>
+  `fetch('hoge.com', { cache: 'force-cache' })`
+- 無効化したい場合はno-storeを指定（デフォルトはno-storeなのでオプション指定なしだとキャッシュ機能無効化になる）<br>
+  `fetch('hoge.com', { cache: 'force-cache' })` or `fetch('hoge.com')`
+
+#### 注意点
+
+Next14まではデフォルトが逆で`force-cache`がデフォルト(キャッシュ有効化)になっているため、Next14以前を使用する場合は注意
