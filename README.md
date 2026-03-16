@@ -16,7 +16,7 @@ Server ActionでAPI Routesより少ないコードで同じ機能を実現でき
   - フォーム送信やボタンクリックなどのユーザー操作から、直接サーバー処理を呼べる。<br>
   - フェッチなどの通信コードを書かなくて良いので、コードが非常にシンプルになる。<br>
   - キャッシュ機能についても密接に連携しているところがあり、このような部分の扱いも手軽にできるメリットがある。
-- APU Routes<br>
+- API Routes<br>
   - Server Actionは外部のアプリから呼び出すことが非常に難しい。<br>
     例えば同じサービスのWEB版とネイティブアプリ版で同一のAPIを使いたいという場合に関しては、<br>
     API Routesで定義すると簡単に使うことができる。<br>
@@ -67,7 +67,14 @@ Next14まではデフォルトが逆で`force-cache`がデフォルト(キャッ
 
 ## キャッシュの更新について（Revalidation）
 
-キャッシュを適切なタイミングで削除/更新する**Revalidation**という仕組みがある
+キャッシュを適切なタイミングで削除/更新する**Revalidation**という仕組みがある<br>
+以下は前述で紹介した5つのキャッシュについて消し方という観点で紹介する
+
+- **Request Memoization**についてはキャッシュの削除を意識する必要はない。<br>
+  なぜならこのキャッシュは１回のリクエスト内という非常に短い時間でしか有効ではないため<br>
+  画面を表示するための処理が終われば、その瞬間自動的に消滅する。
+
+それ以外の手動で消すことができるキャッシュ達↓
 
 - 流れとしてキャッシュがサーバー側に保存されるもの
   - Full Route Cache
@@ -78,5 +85,69 @@ Next14まではデフォルトが逆で`force-cache`がデフォルト(キャッ
 
 - これらに明示的に削除指示を出すこともでき、サーバ側のキャッシュを消す仕組みをRevalidation（リバリデーション）という。
 - リバリデーションを行うことでData Cacheやuse Cacheが削除され、新しいデータの再取得が走るようになる。<br>
-  そしてそれらは更新されると、連動してFull Route Cacheも自動的に作り直される仕組みとなっている
-- 大きく分けてRevalidate PassとRevalidate tag
+  そしてそれらは更新されると、連動してFull Route Cacheも自動的に作り直される仕組みとなっている。
+- 大きく分けて**Revalidate Pass**と**Revalidate tag**という二つの方法がある。
+
+#### Revalidate Pass
+
+指定したページに関連するキャッシュを一括で消すという方法。<br>
+引数に対して消したいページのパスを指定してあげると、このページに関するキャッシュを削除することができる。<br>
+。以下だとトップページに使われているキャッシュなどが全て削除される
+`revalidatePath('/')`<br>
+例えば、記事を投稿したからトップページの一覧を最新にしたいなど、ページ単位の更新はこれが一番手っ取り早い
+
+#### Revalidate Pass
+
+細かく開発者側で指定したデータだけ狙い撃ちで消したい場合に使用する。<br>
+使用するにはデータを取得する段階で、タグというものをつける必要がある。
+
+```
+// fecth関数の第二引数のオプションでnextというのがあり、その中にtagsというものがある
+fetch('hoge.com', {
+	// tagsに対して配列を指定するとfecthで取得したデータにpostsというタグをつけれる。
+	next: { tags: ['posts'] },
+})
+```
+
+fetch以外で例えばuse Cacheでも同様でtagsをつけたい場合は
+
+```
+async function getHeavyData() {
+	// use CacheでgetHeavyDataのキャッシュが保存される
+	'use cache'
+	// ここでcacheTagを指定
+	cacheTag('posts')
+	await new Promise((resolve) => setTimeout(resolve, 3000))
+	return '重いデータの取得完了'
+}
+```
+
+cacheTagという関数があり同じく名前を指定するすることで、getHeavyData関数で取得したデータに対しても<br>postsというタグをつけることができる。<br>
+こうしてタグをつけておくと更新する時に、そのタグを指定してキャッシュを削除することができる。
+
+```
+// revalidateTagに対し消したいタグを指定することで、postsタグがついているデータを一掃できる。
+revalidateTag('posts')
+```
+
+ここまではサーバ側のキャッシュの話だが、
+
+- Router Cache（ブラウザ側・ユーザー操作側）
+
+についてはサーバーではなくクライアントブラウザ側に保存されているキャッシュになるため、<br>
+サーバー側でRevalidationを行うだけでは削除できずブラウザに古い画面が残ってしまうことがある。<br>
+これを防ぐためにはブラウザ側で**ルーターリフレッシュという関数を使って画面を強制的に更新する必要がある。**<br>
+
+```
+// next/routeの方ではなく、next/navigationの方を使用する
+const router = useRouter()
+router.refresh()
+```
+
+このrouterからrefreshという関数を呼び出すだけで、Router Cacheを無効化してサーバーから最新のエータを取得し直すことができる。
+
+- 注意点
+  NextのServer Actionを使用している場合はrouter.refresh()を手動で呼ぶ必要はない。<br>
+  Server Actionの中でRevalidate PassとRevalidate tagを実行すると、Next側は自動的にサーバー側のデータが変わったことを検知し、レスポンスを返す際にブラウザ側のRouter Cacheも一緒に更新してくれる。<br>
+  Server Actionを中心に開発しているとRouter Cacheの存在も意識することはない。<br>
+  ただServer Actionを使用せずに、API Routesを使用していたり、Nextの外にAPIを持っている場合はrouter.refreshが必要になってくるケースもある。
